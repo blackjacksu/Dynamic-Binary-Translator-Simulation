@@ -12,4 +12,9 @@ Function description:
     - ARM -> x86 ISA conversion
     - 
 
- 
+
+Compiile: 
+    - Terminal> make
+
+Execute:
+    - ./BinaryTranslate square.asm 2 1 
