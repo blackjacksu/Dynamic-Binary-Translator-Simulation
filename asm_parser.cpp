@@ -26,20 +26,23 @@ ostream& operator<<(ostream& os, const ParseState _state)
 
 AsmParseWorker::AsmParseWorker()
 {
-    
-}
-        
-AsmParseWorker::AsmParseWorker(unsigned char _guest_isa, unsigned char _host_isa, string _in_file_name)
-{
-    guest_isa = _guest_isa;
-    host_isa = _host_isa;
-    file_name = _in_file_name;
+    cout << "asm default constructor" << endl;
     line_count = 0;
-
     curr_state = ParseState::Init;
 }
+        
+// AsmParseWorker::AsmParseWorker(unsigned char _guest_isa, unsigned char _host_isa, string _in_file_name)
+// {
+//     cout << "asm constructor" << endl;
+//     guest_isa = _guest_isa;
+//     host_isa = _host_isa;
+//     file_name = _in_file_name;
+//     line_count = 0;
 
-void AsmParseWorker::file_parsing()
+//     curr_state = ParseState::Init;
+// }
+
+void AsmParseWorker::file_parsing(string _file_path, string _in_file_name)
 {
     if (curr_state != ParseState::Init)
     {
@@ -47,9 +50,11 @@ void AsmParseWorker::file_parsing()
         return;
     }
     // File open
+    string file_dir = _file_path + _in_file_name;
+    cout << "file dir: " << file_dir << endl;
     string line;
     ifstream parse_fs;
-    parse_fs.open(file_name);
+    parse_fs.open(file_dir);
     int i = 0;
     // Parse the file line by line 
     // Special char: "L1:" -> block++, \n -> ins_count++
@@ -59,7 +64,6 @@ void AsmParseWorker::file_parsing()
         while ( getline(parse_fs, line))
         {
             line_count++;
-
             cout << line << '\n';
         }
         // End of file
@@ -76,8 +80,8 @@ void AsmParseWorker::file_parsing()
         // Parse the file again
         while ( getline(parse_fs, this->lines[i]))
         {
+            cout << "i: " << i << " " << this->lines[i] << '\n';
             i++;
-            cout << line << '\n';
         }
         // Close the file 
         parse_fs.close();
@@ -87,7 +91,7 @@ void AsmParseWorker::file_parsing()
     }
     else 
     {
-        cout << "Unable to open file"; 
+        cout << "Unable to open file: " << file_dir << endl; 
     }
 }
 

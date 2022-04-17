@@ -2,6 +2,11 @@
 #include "ins_conversion.h"
 #include "ins_out.h"
 
+#include <string>
+#include <filesystem>
+#include <unistd.h>
+
+
 class BinaryTranslationManager{
     private: 
         unsigned char host_isa;

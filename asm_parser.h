@@ -35,7 +35,7 @@ class AsmParseWorker{
         AsmParseWorker(unsigned char _host_isa, unsigned char _guest_isa, string _file_name, string _file_path);
 
         // Get instruction count and parse file content line by line
-        void file_parsing();
+        void file_parsing(string _in_file_name, string _file_path);
 
         // Get instruction count and parse file content line by line
         void code_block_identifying();

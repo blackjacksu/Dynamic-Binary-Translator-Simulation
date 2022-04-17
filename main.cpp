@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     }
     guest_isa = atoi(argv[argc]);
         
-    if (argv[--argc] != NULL)
+    if (argv[--argc] == NULL)
     {
         cout << "Assembly file name format error" << endl;
         exit(0);
