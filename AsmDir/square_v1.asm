@@ -1,29 +1,25 @@
-square(int):                             # @square(int)
-        push    rbp
-        mov     rbp, rsp
-        sub     rsp, 64
-        mov     dword ptr [rbp - 4], edi
-        mov     dword ptr [rbp - 8], 56
-        lea     rdi, [rbp - 48]
-        xor     esi, esi
-        mov     edx, 32
-        call    memset@PLT
-        mov     qword ptr [rbp - 56], 0
-        lea     rax, [rbp - 8]
-        mov     qword ptr [rbp - 56], rax
-        mov     dword ptr [rbp - 60], 0
-.LBB0_1:                                # %for.cond
-        cmp     dword ptr [rbp - 60], 10
-        jge     .LBB0_4
-        jmp     .LBB0_3
-.LBB0_3:                                # %for.inc
-        mov     eax, dword ptr [rbp - 60]
-        add     eax, 1
-        mov     dword ptr [rbp - 60], eax
-        jmp     .LBB0_1
-.LBB0_4:                                # %for.end
-        mov     eax, dword ptr [rbp - 4]
-        imul    eax, dword ptr [rbp - 4]
-        add     rsp, 64
-        pop     rbp
-        ret
+square(int):
+        sub     sp, sp, #12
+        str     r0, [sp, #8]
+        mov     r0, #98
+        str     r0, [sp, #4]
+        mov     r0, #0
+        str     r0, [sp]
+        b       .LBB0_1
+.LBB0_1:
+        ldr     r0, [sp]
+        cmp     r0, #9
+        bgt     .LBB0_4
+        b       .LBB0_2
+.LBB0_2:
+        b       .LBB0_3
+.LBB0_3:
+        ldr     r0, [sp]
+        add     r0, r0, #1
+        str     r0, [sp]
+        b       .LBB0_1
+.LBB0_4:
+        ldr     r1, [sp, #8]
+        mul     r0, r1, r1
+        add     sp, sp, #12
+        bx      lr
