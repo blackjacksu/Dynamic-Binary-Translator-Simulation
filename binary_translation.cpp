@@ -15,7 +15,7 @@ BinaryTranslationManager::BinaryTranslationManager(unsigned char _guest_isa, uns
     file_path = s;
     cout << "file path: " << file_path << endl;
     file_path += "/AsmDir/";
-    out_file_name = in_file_name + "_x86";
+    out_file_name = in_file_name.substr(0, in_file_name.find(".")) + "_x86" + in_file_name.substr(in_file_name.find("."), in_file_name.length());
 
     // AsmParseWorker asm_worker(guest_isa, host_isa, in_file_name);
     // InsConvertWorker ins_convert_worker(guest_isa, host_isa, in_file_name);
@@ -27,19 +27,19 @@ BinaryTranslationManager::BinaryTranslationManager(unsigned char _guest_isa, uns
 void BinaryTranslationManager::conversion_start()
 {
     cout << "file path: " << file_path << "input file: " << in_file_name << "output file: " << out_file_name << endl;
-    // Step 1: Parse the asm file 
-    asm_worker.file_parsing(file_path, in_file_name);
+    // Step 1: Parse the asm file identifying the code block
+    asm_worker.file_parsing_to_block(guest_asm_blocks, file_path, in_file_name);
 
-    // Step 2: identifying the code block in the file
-    asm_worker.code_block_identifying();
-
-    // Step 3: instruction parsing 
-    asm_worker.instrurction_parsing();
+    // Step 2: instruction parsing 
+    asm_worker.instrurction_parsing(guest_asm_blocks);
 
     // Step 4: operator conversion
-    ins_convert_worker.conversion_host_isa();
+    ins_convert_worker.conversion_host_isa(host_asm_blocks, guest_asm_blocks);
 
     // Step 5: 
-    ins_out_worker.write_to_outfile(file_path, in_file_name);
+    ins_out_worker.write_to_outfile(file_path, out_file_name);
+
+    // Step : Write translated assembly to output file
+
 
 }

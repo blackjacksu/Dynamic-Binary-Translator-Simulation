@@ -14,7 +14,15 @@ InsConvertWorker::InsConvertWorker(unsigned char _guest_isa, unsigned char _host
 }
 
 
-void InsConvertWorker::conversion_host_isa()
+void InsConvertWorker::conversion_host_isa(CodeBlock * _host_blocks, CodeBlock * _guest_blocks)
 {
+    // 1. Init x86 stack size and stack register
+    
+
+    // 2. Handle loop 
+
+
+
+
     return;
 }

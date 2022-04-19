@@ -23,6 +23,8 @@ class BinaryTranslationManager{
         class InsConvertWorker ins_convert_worker;
         class InsOutputWorker ins_out_worker;
 
+        class CodeBlock * guest_asm_blocks;
+        class CodeBlock * host_asm_blocks;
 
     public:
         // Default 

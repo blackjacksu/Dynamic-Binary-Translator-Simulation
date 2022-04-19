@@ -1,10 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include "code_block.h"
 
 using namespace std;
 
-enum ParseState { Init = 0, FileParsed, InsParsed, Completed };
+enum ParseState { FileInit = 0, FileParsed, InsParsed, Completed };
 
 
 class AsmParseWorker{
@@ -21,8 +22,7 @@ class AsmParseWorker{
         // assembly file name
         string file_name;
         string file_path;
-
-        string * lines;
+        class CodeBlock * blocks;
 
     public:
         // Default Constructor
@@ -34,14 +34,11 @@ class AsmParseWorker{
         // Constructor
         AsmParseWorker(unsigned char _host_isa, unsigned char _guest_isa, string _file_name, string _file_path);
 
-        // Get instruction count and parse file content line by line
-        void file_parsing(string _in_file_name, string _file_path);
-
-        // Get instruction count and parse file content line by line
-        void code_block_identifying();
+        // Get instruction count and parse file content line by line into code_block
+        void file_parsing_to_block(CodeBlock * _code_blocks, string _file_path, string _in_file_name);
 
         // Get the instruction and operand
-        void instrurction_parsing();
+        void instrurction_parsing(CodeBlock * _code_blocks);
 
         // Get instruction count
         unsigned long get_ins_count();

@@ -5,7 +5,7 @@ ostream& operator<<(ostream& os, const ParseState _state)
 {
   switch(_state)
   {
-    case ParseState::Init:
+    case ParseState::FileInit:
         os << "0";
         break;
     case ParseState::FileParsed:
@@ -28,7 +28,9 @@ AsmParseWorker::AsmParseWorker()
 {
     cout << "asm default constructor" << endl;
     line_count = 0;
-    curr_state = ParseState::Init;
+    curr_state = ParseState::FileInit;
+    code_block_count = 0;
+    blocks = NULL;
 }
         
 // AsmParseWorker::AsmParseWorker(unsigned char _guest_isa, unsigned char _host_isa, string _in_file_name)
@@ -42,46 +44,61 @@ AsmParseWorker::AsmParseWorker()
 //     curr_state = ParseState::Init;
 // }
 
-void AsmParseWorker::file_parsing(string _file_path, string _in_file_name)
+void AsmParseWorker::file_parsing_to_block(CodeBlock * _code_blocks, string _file_path, string _in_file_name)
 {
-    if (curr_state != ParseState::Init)
+    if (curr_state != ParseState::FileInit)
     {
         cout << "Incorrect state for parsing: " << curr_state << endl;
         return;
     }
     // File open
     string file_dir = _file_path + _in_file_name;
-    cout << "file dir: " << file_dir << endl;
     string line;
     ifstream parse_fs;
+    unsigned long line_i = 0;
+    unsigned long block_i = 0;
+    BlockTag tag = BlockTag::NoneTag;
+
     parse_fs.open(file_dir);
-    int i = 0;
     // Parse the file line by line 
     // Special char: "L1:" -> block++, \n -> ins_count++
     if (parse_fs.is_open())
     {
         // The default seperator of getline() is "\n"
-        while ( getline(parse_fs, line))
+        while ( getline(parse_fs, line, ':'))
         {
-            line_count++;
-            cout << line << '\n';
+            code_block_count++;
+            cout << "block: " << code_block_count << endl; 
         }
         // End of file
-        cout << "line count:" << line_count << '\n';
+        // cout << "line count:" << line_count << '\n';
+        cout << "code block count:" << code_block_count << '\n';
 
         // Dynamically allocate region for file
-        this->lines =  new string[line_count];
-        // store 
+        _code_blocks = new CodeBlock[code_block_count];
 
-        // Clear the file stream pointer to the begining
+        // Clear the file stream pointer to the beginning
         parse_fs.clear();
         parse_fs.seekg(0);
 
         // Parse the file again
-        while ( getline(parse_fs, this->lines[i]))
+        while ( getline(parse_fs, line, ':'))
         {
-            cout << "i: " << i << " " << this->lines[i] << '\n';
-            i++;
+            _code_blocks[block_i].set_head_line(line, line_i);
+            getline(parse_fs, line, ':');
+            if (tag == BlockTag::NoneTag)
+            {
+                // The first block is going to be init tag
+                tag = BlockTag::InitTag;
+                _code_blocks[block_i].set_code_block(line, tag);
+            }
+            else
+            {
+                _code_blocks[block_i].set_code_block(line, BlockTag::OtherTag);
+            }
+
+            cout << "i=" << line_i << ": " << line << endl;
+            line_i++;
         }
         // Close the file 
         parse_fs.close();
@@ -95,25 +112,28 @@ void AsmParseWorker::file_parsing(string _file_path, string _in_file_name)
     }
 }
 
-// Get instruction count and parse file content line by line
-void AsmParseWorker::code_block_identifying()
+void AsmParseWorker::instrurction_parsing(CodeBlock * _code_blocks)
 {
-    if (curr_state != ParseState::FileParsed)
+    if (curr_state != ParseState::FileParsed && _code_blocks != NULL)
     {
         cout << "Incorrect state for parsing: " << curr_state << endl;
         return;
     }
 
+    unsigned long i = 0;
 
-}
-
-void AsmParseWorker::instrurction_parsing()
-{
-    if (curr_state != ParseState::FileParsed)
+    while (i < code_block_count)
     {
-        cout << "Incorrect state for parsing: " << curr_state << endl;
-        return;
+        if (_code_blocks[i].get_block_tag() == BlockTag::InitTag)
+        {
+            // Init block
+        }
+
+        
+
+        i++;
     }
+
 }
 
 unsigned long AsmParseWorker::get_ins_count()
