@@ -23,6 +23,4 @@ void InsConvertWorker::conversion_host_isa(CodeBlock * _host_blocks, CodeBlock *
 
 
 
-
-    return;
 }

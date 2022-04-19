@@ -27,8 +27,9 @@ BinaryTranslationManager::BinaryTranslationManager(unsigned char _guest_isa, uns
 void BinaryTranslationManager::conversion_start()
 {
     cout << "file path: " << file_path << "input file: " << in_file_name << "output file: " << out_file_name << endl;
+
     // Step 1: Parse the asm file identifying the code block
-    asm_worker.file_parsing_to_block(guest_asm_blocks, file_path, in_file_name);
+    guest_asm_blocks = asm_worker.file_parsing_to_block(file_path, in_file_name);
 
     // Step 2: instruction parsing 
     asm_worker.instrurction_parsing(guest_asm_blocks);

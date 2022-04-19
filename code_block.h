@@ -5,8 +5,10 @@
 #include <string.h>
 #include <sstream> 
 #include <regex>
+#include <cstddef>
 
 #define MAX_OPERAND_NUM 3
+#define DEBUG_CODE_BLOCK 1
 
 using namespace std;
 // using namespace std::stringstream;
@@ -16,10 +18,13 @@ enum BlockTag {NoneTag = 0, InitTag, LoopTag, BranchTag, EndTag, OtherTag};
 enum ArmInsType {MOV_arm = 0, ADD_arm, SUB_arm, CMP_arm, MUL_arm, BR_arm, STR_arm, LDR_arm, Other_arm};
 enum x86InsType {MOV_x86 = 0, ADD_x86, SUB_x86, CMP_x86, MUL_x86, JMP_x86, RET_x86, Other_x86};
 
+// A linked list struct for storing the instructions data 
 struct INS {
+    unsigned long line_num;
     string opcode;
     string operand[MAX_OPERAND_NUM];
     unsigned char size; // numbers of opcode + operands
+    struct INS * next;
 };
 
 class CodeBlock{
@@ -36,7 +41,8 @@ class CodeBlock{
 
         // Ins conversion variable
         unsigned long stack_size; // unit: bytes
-        struct INS * instructions;
+        struct INS * ins_head; // Point to the first ins node causing overflow? It is not this part that cause seg fault
+        struct INS * ins_tail; // Point to the last ins node causing overflow? Ans: referred to the instrurction_parsing
 
         unsigned long str_count;
         unsigned long ldr_count;
@@ -50,11 +56,13 @@ class CodeBlock{
         CodeBlock();
 
         // Set the header of the block and the start line number
-        unsigned char set_head_line(string _head_line, unsigned long _start_line_num);
+        unsigned char set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag);
 
-        // Analyze the block data, block tag, 
-        unsigned char set_code_block(string _line, BlockTag _tag);
-        
+        // Set the code block line by line 
+        unsigned char set_code_block_content(string _line, unsigned long _line_num);
+
+        // Set the end of the block and the end line number
+        unsigned char set_end_line(unsigned long _end_line_num);
 
         // Public API 
         // Identify the tag of the block
