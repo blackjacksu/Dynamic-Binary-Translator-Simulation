@@ -2,6 +2,8 @@
 
 BinaryTranslationManager::BinaryTranslationManager()
 {
+    guest_blocks_num = 0;
+    host_blocks_num = 0;
     file_path = "/AsmDir/";
 }
 
@@ -29,13 +31,14 @@ void BinaryTranslationManager::conversion_start()
     cout << "file path: " << file_path << "input file: " << in_file_name << "output file: " << out_file_name << endl;
 
     // Step 1: Parse the asm file identifying the code block
-    guest_asm_blocks = asm_worker.file_parsing_to_block(file_path, in_file_name);
-
     // Step 2: instruction parsing 
-    asm_worker.instrurction_parsing(guest_asm_blocks);
+    guest_asm_blocks = asm_worker.file_parsing_to_block(guest_blocks_num, file_path, in_file_name);
+
+    // // Step 3: 
+    // asm_worker.instrurction_parsing(guest_asm_blocks);
 
     // Step 4: operator conversion
-    ins_convert_worker.conversion_host_isa(host_asm_blocks, guest_asm_blocks);
+    ins_convert_worker.conversion_host_isa(host_asm_blocks, host_blocks_num, guest_asm_blocks, guest_blocks_num);
 
     // Step 5: 
     ins_out_worker.write_to_outfile(file_path, out_file_name);

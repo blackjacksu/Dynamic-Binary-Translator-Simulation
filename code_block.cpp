@@ -3,8 +3,18 @@
 
 CodeBlock::CodeBlock()
 {
-
+    mov_count = 0;
+    add_count = 0;
+    sub_count = 0;
+    cmp_count = 0;
+    mul_count = 0;
+    str_count = 0;
+    ldr_count = 0;
+    bx_count = 0;
+    jmp_count = 0;
+    ret_count = 0;
     line_count = 0;
+
     tag = BlockTag::NoneTag;
     ins_head = NULL;
     ins_tail = NULL;
@@ -13,30 +23,26 @@ CodeBlock::CodeBlock()
 #endif
 }
 
-unsigned char CodeBlock::set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag)
+unsigned char CodeBlock::set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag, unsigned long _line_count)
 {
     unsigned char ret = 0;
 
     head = _head_line;
     start_line_num = _start_line_num;
     tag = _tag;
+    line_count = _line_count;
 
     return ret;
 }
 
-unsigned char CodeBlock::set_code_block_content(string _line, unsigned long _line_num)
+void CodeBlock::set_code_block_content(string _line, unsigned long _line_num)
 {
-    unsigned char ret = 0;
     unsigned long i = 0;
-    line_count++;
     content += _line;
+
     struct INS * new_ins_node = new struct INS;
     new_ins_node->line_num = _line_num;
-
-    convert_line_to_instruction(_line, new_ins_node);
-#if DEBUG_CODE_BLOCK
-    cout << "ins opcode: " << new_ins_node->opcode << ", operand: " << new_ins_node->operand[0] << ", operand 1: " << new_ins_node->operand[1] << endl;
-#endif
+    new_ins_node->lines = _line;
 
     if (ins_head == NULL)
     {
@@ -52,7 +58,74 @@ unsigned char CodeBlock::set_code_block_content(string _line, unsigned long _lin
         new_ins_node->next = NULL;
         ins_tail = new_ins_node;
     }
+}
 
+unsigned char CodeBlock::analyze_code_block_content()
+{
+    unsigned char ret = 0;
+    struct INS * ptr = ins_head;
+
+    while (ptr != NULL)
+    {
+        convert_line_to_instruction(ptr->lines, ptr);
+#if DEBUG_CODE_BLOCK
+        cout << "ins opcode: " << ptr->opcode << ", operand: " << ptr->operand[0] << ", operand 1: " << ptr->operand[1] << endl;
+#endif
+        if (ptr->opcode.find("mov") != string::npos || ptr->opcode.find("MOV") != string::npos )
+        {
+            mov_count ++;
+        }
+        else if (ptr->opcode.find("add") != string::npos || ptr->opcode.find("ADD") != string::npos)
+        {
+            add_count++;
+        }
+        else if (ptr->opcode.find("sub") != string::npos || ptr->opcode.find("SUB") != string::npos)
+        {
+            sub_count++;
+        }        
+        else if (ptr->opcode.find("cmp") != string::npos || ptr->opcode.find("CMP") != string::npos)
+        {
+            cmp_count++;
+        }        
+        else if (ptr->opcode.find("mul") != string::npos || ptr->opcode.find("MUL") != string::npos)
+        {
+            mul_count++;
+        }        
+        else if (ptr->opcode.find("str") != string::npos || ptr->opcode.find("STR") != string::npos)
+        {
+            str_count++;
+        }        
+        else if (ptr->opcode.find("ldr") != string::npos || ptr->opcode.find("LDR") != string::npos)
+        {
+            ldr_count++;
+        }        
+        else if (ptr->opcode.find("b") != string::npos || ptr->opcode.find("B") != string::npos)
+        {
+            bx_count++;
+        }        
+        else if (ptr->opcode.find("jmp") != string::npos || ptr->opcode.find("JMP") != string::npos)
+        {
+            jmp_count++;
+        }        
+        else if (ptr->opcode.find("ret") != string::npos || ptr->opcode.find("RET") != string::npos)
+        {
+            ret_count++;
+        }
+        
+        ptr = ptr->next;
+    }
+#if DEBUG_CODE_BLOCK
+    cout << "mov:" << mov_count << endl;
+    cout << "add:" << add_count << endl;
+    cout << "sub:" << sub_count << endl;
+    cout << "cmp:" << cmp_count << endl;
+    cout << "mul:" << mul_count << endl;
+    cout << "str:" << str_count << endl;
+    cout << "ldr:" << ldr_count << endl;
+    cout << "bx:" << bx_count << endl;
+    cout << "jmp:" << jmp_count << endl;
+    cout << "ret:" << ret_count << endl;
+#endif
     return ret;
 }
 
@@ -81,7 +154,6 @@ void CodeBlock::convert_line_to_instruction(string _line, struct INS * _ins)
 
     while (pos_start != string::npos)
     {
-        cout << "start: " << pos_start << ", end: " << pos_end << ", " << _line.substr(pos_start, pos_end - pos_start) << endl;
         if (_ins->size == 0)
         {
             _ins->opcode = _line.substr(pos_start, pos_end - pos_start);
@@ -100,8 +172,9 @@ void CodeBlock::convert_line_to_instruction(string _line, struct INS * _ins)
         _ins->size++;
         pos_start = _line.find_first_of(alpha_extractor, zero_i);
         pos_end = _line.find_first_of(delimiter, pos_start);
-
-        cout << "start: " << pos_start << ", end: " << pos_end << endl;
+#if DEBUG_CODE_BLOCK
+        // cout << "start: " << pos_start << ", end: " << pos_end << ", " << _line.substr(pos_start, pos_end - pos_start) << endl;
+#endif
     }
     
     // unsigned long i = 0;

@@ -44,7 +44,7 @@ AsmParseWorker::AsmParseWorker()
 // }
 
 
-CodeBlock * AsmParseWorker::file_parsing_to_block(string _file_path, string _in_file_name)
+CodeBlock * AsmParseWorker::file_parsing_to_block(unsigned long &_blocks_num, string _file_path, string _in_file_name)
 {
     if (curr_state != ParseState::FileInit)
     {
@@ -66,9 +66,13 @@ CodeBlock * AsmParseWorker::file_parsing_to_block(string _file_path, string _in_
     if (parse_fs.is_open())
     {
         // The default seperator of getline() is "\n"
-        while ( getline(parse_fs, line, ':'))
+        while ( getline(parse_fs, line))
         {
-            code_block_count++;
+            line_count++;
+            if (line.find(":") != string::npos)
+            {   
+                code_block_count++;
+            }
             cout << "block: " << code_block_count << endl; 
         }
         // End of file
@@ -76,11 +80,8 @@ CodeBlock * AsmParseWorker::file_parsing_to_block(string _file_path, string _in_
         cout << "code block count:" << code_block_count << '\n';
 
         // // Dynamically allocate region for file
-        _code_blocks = new CodeBlock[code_block_count + 1];
-        
-        _code_blocks[2].set_head_line("~", 0, BlockTag::OtherTag);
+        _code_blocks = new CodeBlock[code_block_count];
 
-        cout << "code block count -1:" << code_block_count << '\n';
         // Clear the file stream pointer to the beginning
         parse_fs.clear();
         parse_fs.seekg(0);
@@ -91,12 +92,12 @@ CodeBlock * AsmParseWorker::file_parsing_to_block(string _file_path, string _in_
             
             cout << "i=" << line_i << ": " << line << endl;
             if (line.find(":") != string::npos)
-            {   
-                block_i = 0;
+            {
                 // Set the end line for previous block
                 if (block_i >= 0)
                 {
                     _code_blocks[block_i].set_end_line(line_i - 1);
+                    _code_blocks[block_i].analyze_code_block_content();
                 }
 
                 // Content in the block
@@ -104,11 +105,11 @@ CodeBlock * AsmParseWorker::file_parsing_to_block(string _file_path, string _in_
                 {
                     // The first block is going to be init tag
                     tag = BlockTag::InitTag;
-                    _code_blocks[++block_i].set_head_line(line, line_i, tag);
+                    _code_blocks[++block_i].set_head_line(line, line_i, tag, line_count);
                 }
                 else
                 {
-                    _code_blocks[++block_i].set_head_line(line, line_i, BlockTag::OtherTag);
+                    _code_blocks[++block_i].set_head_line(line, line_i, BlockTag::OtherTag, line_count);
                 }
             }
             else 
@@ -122,9 +123,11 @@ CodeBlock * AsmParseWorker::file_parsing_to_block(string _file_path, string _in_
         // Close the file 
         parse_fs.close();
         line_count = line_i;
+        _blocks_num = code_block_count;
 
         // Update state machine
         curr_state = ParseState::FileParsed;
+        cout << "end" << endl;
     }
     else 
     {
@@ -133,6 +136,7 @@ CodeBlock * AsmParseWorker::file_parsing_to_block(string _file_path, string _in_
     return _code_blocks;
 }
 
+// Temperoraly not in used
 void AsmParseWorker::instrurction_parsing(CodeBlock * _code_blocks)
 {
     if (curr_state != ParseState::FileParsed || _code_blocks == NULL)
@@ -150,11 +154,8 @@ void AsmParseWorker::instrurction_parsing(CodeBlock * _code_blocks)
             // Init block
         }
 
-
-
         i++;
     }
-
 }
 
 unsigned long AsmParseWorker::get_ins_count()

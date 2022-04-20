@@ -14,22 +14,23 @@ class InsConvertWorker{
         unsigned long ins_count;
         unsigned long code_block_count;
 
-        string file_name;
-        string file_path;
+
 
         // Analyze register usage 
         // Num of special reg / Num of general reg / 
-        // 
+        unsigned long stack_size; // unit: bytes
+
+        void direct_translate(string &host_line, struct INS * _guest_line);
         
     public:
         // Default Constructor
         InsConvertWorker();
         
         // Constructor
-        InsConvertWorker(unsigned char _guest_isa, unsigned char _host_isa, string _file_name);
+        InsConvertWorker(unsigned char _guest_isa, unsigned char _host_isa);
 
         // Convert the guest block to host block
-        void conversion_host_isa(CodeBlock * _host_blocks, CodeBlock * _guest_blocks);
+        void conversion_host_isa(CodeBlock * _host_blocks, unsigned long &_host_blocks_num, CodeBlock * _guest_blocks, unsigned long &_guest_blocks_num);
 
 
 };

@@ -21,9 +21,12 @@ enum x86InsType {MOV_x86 = 0, ADD_x86, SUB_x86, CMP_x86, MUL_x86, JMP_x86, RET_x
 // A linked list struct for storing the instructions data 
 struct INS {
     unsigned long line_num;
+    string lines;
     string opcode;
     string operand[MAX_OPERAND_NUM];
     unsigned char size; // numbers of opcode + operands
+    ArmInsType arm_type;
+    x86InsType x86_type;
     struct INS * next;
 };
 
@@ -34,20 +37,24 @@ class CodeBlock{
         unsigned long start_line_num; // number of line start in file
         string head;
         string content;
-        string * lines;
         unsigned long end_line_num; // number of line end in file
         unsigned long line_count;
         CodeBlock * next_block; 
 
         // Ins conversion variable
-        unsigned long stack_size; // unit: bytes
         struct INS * ins_head; // Point to the first ins node causing overflow? It is not this part that cause seg fault
         struct INS * ins_tail; // Point to the last ins node causing overflow? Ans: referred to the instrurction_parsing
 
-        unsigned long str_count;
-        unsigned long ldr_count;
+        unsigned long mov_count;
         unsigned long add_count;
         unsigned long sub_count;
+        unsigned long cmp_count;
+        unsigned long mul_count;
+        unsigned long str_count;
+        unsigned long ldr_count;
+        unsigned long bx_count;
+        unsigned long jmp_count;
+        unsigned long ret_count;
 
         static void convert_line_to_instruction(string _line, struct INS * _ins);
 
@@ -56,10 +63,13 @@ class CodeBlock{
         CodeBlock();
 
         // Set the header of the block and the start line number
-        unsigned char set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag);
+        unsigned char set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag, unsigned long _line_count);
 
         // Set the code block line by line 
-        unsigned char set_code_block_content(string _line, unsigned long _line_num);
+        void set_code_block_content(string _line, unsigned long _line_num);
+
+        // Analyze code block 
+        unsigned char analyze_code_block_content();
 
         // Set the end of the block and the end line number
         unsigned char set_end_line(unsigned long _end_line_num);

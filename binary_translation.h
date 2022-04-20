@@ -24,7 +24,9 @@ class BinaryTranslationManager{
         class InsOutputWorker ins_out_worker;
 
         class CodeBlock * guest_asm_blocks;
+        unsigned long guest_blocks_num;
         class CodeBlock * host_asm_blocks;
+        unsigned long host_blocks_num;
 
     public:
         // Default 

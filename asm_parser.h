@@ -40,7 +40,7 @@ class AsmParseWorker{
         AsmParseWorker(unsigned char _host_isa, unsigned char _guest_isa, string _file_name, string _file_path);
 
         // Get instruction count and parse file content line by line into code_block
-        CodeBlock * file_parsing_to_block(string _file_path, string _in_file_name);
+        CodeBlock * file_parsing_to_block(unsigned long &_blocks_num, string _file_path, string _in_file_name);
 
         // Get the instruction and operand
         // The problem that struggle you for entire afternoon is here: seg fault
