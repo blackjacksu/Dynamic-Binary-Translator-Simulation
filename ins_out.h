@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <stdio.h>
+
+#include "code_block.h"
 
 using namespace std;
 
@@ -15,6 +18,10 @@ class InsOutputWorker{
         // Default
         InsOutputWorker();
 
-        // Get instruction count
-        unsigned char write_to_outfile(string _in_file_name, string _file_path);
+        // Create output file 
+        unsigned char create_output_file(string _out_file_path, string _out_file_name);
+        // Write the code block to output file
+        unsigned char write_to_outfile(CodeBlock &_host_blocks, string _out_file_path, string _out_file_name);
+
+        ~InsOutputWorker();
 };

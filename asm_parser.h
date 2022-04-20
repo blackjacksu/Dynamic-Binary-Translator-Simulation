@@ -16,7 +16,7 @@ class AsmParseWorker{
         unsigned char guest_isa;
         unsigned long ins_count;
         unsigned long code_block_count;
-        unsigned long line_count;
+        unsigned long asm_line_count;
 
         // state machine to ensure the sequence of parsing the instruction: parse file -> parse ins -> ...
         ParseState curr_state;
@@ -53,5 +53,5 @@ class AsmParseWorker{
         // Get instruction code block count
         unsigned long get_code_block_count();
 
-        
+        ~AsmParseWorker();
 };

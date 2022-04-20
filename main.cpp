@@ -59,5 +59,7 @@ int main(int argc, char *argv[])
 
     binary_trans.conversion_start();
 
+    cout << "Conversion Done" << endl;
+
     return 0;
 }

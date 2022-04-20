@@ -1,5 +1,7 @@
 #include "code_block.h"
 
+bool CodeBlock::dic_inited = false;
+map <string, string> CodeBlock::ins_dictionary;
 
 CodeBlock::CodeBlock()
 {
@@ -18,19 +20,42 @@ CodeBlock::CodeBlock()
     tag = BlockTag::NoneTag;
     ins_head = NULL;
     ins_tail = NULL;
+
+    line_count = 0;
+
+    if (!dic_inited)
+    {
+        // contain most of the direct-mappable instruction
+        ins_dictionary["arm"] = "x86";
+        ins_dictionary["mov"] = "mov";
+        ins_dictionary["add"] = "add";
+        // branch
+        ins_dictionary["bx"] = "ret";
+        ins_dictionary["bgt"] = "jde";
+
+        // trick
+        ins_dictionary["body"] = "qword ptr [rbp - 0]";
+    
+        dic_inited = true;
+    }
 #if DEBUG_CODE_BLOCK
     cout << "CodeBlock Constructor" << endl;
 #endif
 }
 
-unsigned char CodeBlock::set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag, unsigned long _line_count)
+
+string CodeBlock::get_x86_Value(string const &key) 
+{ 
+    return ins_dictionary[key]; 
+}
+
+unsigned char CodeBlock::set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag)
 {
     unsigned char ret = 0;
 
     head = _head_line;
     start_line_num = _start_line_num;
     tag = _tag;
-    line_count = _line_count;
 
     return ret;
 }
@@ -58,6 +83,16 @@ void CodeBlock::set_code_block_content(string _line, unsigned long _line_num)
         new_ins_node->next = NULL;
         ins_tail = new_ins_node;
     }
+}
+
+unsigned char CodeBlock::set_end_line(unsigned long _end_line_num)
+{
+    unsigned char ret = 0;
+    end_line_num = _end_line_num;
+    line_count = end_line_num - start_line_num; // including header
+    cout << "l count: " << line_count << ", start: " << start_line_num << ", end: " << end_line_num << endl;
+
+    return ret;
 }
 
 unsigned char CodeBlock::analyze_code_block_content()
@@ -114,29 +149,45 @@ unsigned char CodeBlock::analyze_code_block_content()
         
         ptr = ptr->next;
     }
-#if DEBUG_CODE_BLOCK
-    cout << "mov:" << mov_count << endl;
-    cout << "add:" << add_count << endl;
-    cout << "sub:" << sub_count << endl;
-    cout << "cmp:" << cmp_count << endl;
-    cout << "mul:" << mul_count << endl;
-    cout << "str:" << str_count << endl;
-    cout << "ldr:" << ldr_count << endl;
-    cout << "bx:" << bx_count << endl;
-    cout << "jmp:" << jmp_count << endl;
-    cout << "ret:" << ret_count << endl;
-#endif
+// #if DEBUG_CODE_BLOCK
+//     cout << "mov:" << mov_count << endl;
+//     cout << "add:" << add_count << endl;
+//     cout << "sub:" << sub_count << endl;
+//     cout << "cmp:" << cmp_count << endl;
+//     cout << "mul:" << mul_count << endl;
+//     cout << "str:" << str_count << endl;
+//     cout << "ldr:" << ldr_count << endl;
+//     cout << "bx:" << bx_count << endl;
+//     cout << "jmp:" << jmp_count << endl;
+//     cout << "ret:" << ret_count << endl;
+// #endif
     return ret;
 }
 
-unsigned char CodeBlock::set_end_line(unsigned long _end_line_num)
+unsigned char CodeBlock::update_ins_data(struct INS * _update_node, unsigned long _line_num)
 {
     unsigned char ret = 0;
+    struct INS * curr_node = ins_head;
+    struct INS * prev_node;
 
-    end_line_num = _end_line_num;
+    while (curr_node != NULL)
+    {
+        if (curr_node->line_num == _line_num)
+        {
+            // found the node to update
+            prev_node->next = _update_node;
+            _update_node->next = curr_node->next;
+            break;
+        }
+        prev_node = curr_node;
+        curr_node = curr_node->next;
+    }
+
+    
 
     return ret;
 }
+
 
 void CodeBlock::convert_line_to_instruction(string _line, struct INS * _ins)
 {
@@ -190,15 +241,90 @@ void CodeBlock::convert_line_to_instruction(string _line, struct INS * _ins)
     // _ins->size = tokens.size();
 }
 
+string * CodeBlock::get_translated_ins(unsigned long &_line_count)
+{
+    // To-Do Handle the bound of the string arrary
+    unsigned long i = 0; // Including headline
+    _line_count = line_count;
+    string * _line = new string[_line_count];
+    _line[i++] = head + ":";
+    cout << "line count: " << _line_count << endl;
+
+    struct INS * seek_head = ins_head;
+    struct INS * seek_tail = seek_head;
+
+    cout << "tag: " << tag << endl;
+
+    switch (tag)
+    {
+        case BlockTag::InitTag:
+            // Translate the Init tag block
+            // Init the stack
+            _line[i++] = "push rbp";
+            _line[i++] = "mov rbp rsp";
+            // Check the stack size
+
+            break;
+        case BlockTag::LoopTag:
+            // Translate the Loop tag block
+            if (seek_head->arm_type == ArmInsType::LDR_arm
+                && seek_head->next->arm_type == ArmInsType::CMP_arm
+                && seek_head->next->next->arm_type == ArmInsType::BR_arm)
+            {
+
+                string opcode = get_x86_Value(seek_head->opcode);
+                string operand = get_x86_Value("body");
+                size_t pos = 17;
+                operand.insert(pos, seek_head->operand[0]);
+                // We got a pattern hit
+                _line[i++] = opcode + operand;
+
+                seek_head->is_x86_translated = true;
+                seek_head->next->is_x86_translated = true;
+                seek_head->next->next->is_x86_translated = true;
+            }
+            break;            
+        case BlockTag::BranchTag:
+            // Translate the Branch tag block
+            break;
+        case BlockTag::EndTag:
+            // Translate the End tag block
+
+            break;
+        case BlockTag::OtherTag:
+            // Translate the Init tag block
+            break;
+        default:
+            break;
+    }
+    return _line;
+}
 
 BlockTag CodeBlock::get_block_tag()
 {
     return tag;
 }
 
-unsigned long CodeBlock::get_block_line_count()
+unsigned long CodeBlock::get_line_count()
 {
     return line_count;
+}
+
+string CodeBlock::get_line(unsigned long _line_num)
+{
+    struct INS * curr_node = ins_head;
+
+    while (curr_node != NULL)
+    {
+        if (curr_node->line_num == _line_num)
+        {
+            // found the node to output
+            break;
+        }
+        curr_node = curr_node->next;
+    }
+
+    return curr_node == NULL ? "error" : curr_node->lines;
 }
 
 unsigned long CodeBlock::get_arm_ins_count(ArmInsType ins_type)
@@ -229,4 +355,11 @@ unsigned long CodeBlock::get_x86_ins_count(x86InsType ins_type)
         default:
             return 0;
     }
+}
+
+// Destructor
+CodeBlock::~CodeBlock()
+{
+    // Clear dynamic new object
+
 }

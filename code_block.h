@@ -6,6 +6,8 @@
 #include <sstream> 
 #include <regex>
 #include <cstddef>
+#include <map>
+
 
 #define MAX_OPERAND_NUM 3
 #define DEBUG_CODE_BLOCK 1
@@ -27,6 +29,7 @@ struct INS {
     unsigned char size; // numbers of opcode + operands
     ArmInsType arm_type;
     x86InsType x86_type;
+    bool is_x86_translated;
     struct INS * next;
 };
 
@@ -58,12 +61,24 @@ class CodeBlock{
 
         static void convert_line_to_instruction(string _line, struct INS * _ins);
 
+        static map <string, string> ins_dictionary;
+        static bool dic_inited;
+
+
+
+
+
     public:
         // Default
         CodeBlock();
 
+        // Get map value
+        string get_x86_Value(string const &key);
+
+        string get_line(unsigned long _line_num);
+
         // Set the header of the block and the start line number
-        unsigned char set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag, unsigned long _line_count);
+        unsigned char set_head_line(string _head_line, unsigned long _start_line_num, BlockTag _tag);
 
         // Set the code block line by line 
         void set_code_block_content(string _line, unsigned long _line_num);
@@ -74,16 +89,23 @@ class CodeBlock{
         // Set the end of the block and the end line number
         unsigned char set_end_line(unsigned long _end_line_num);
 
+        // Update the ins node data 
+        unsigned char update_ins_data(struct INS * _update_node, unsigned long _line_num);
+
         // Public API 
         // Identify the tag of the block
         BlockTag get_block_tag();
 
         // Get instruction count in block
-        unsigned long get_block_line_count();
+        unsigned long get_line_count();
 
         unsigned long get_arm_ins_count(ArmInsType ins_type);
 
         unsigned long get_x86_ins_count(x86InsType ins_type);
+
+        string * get_translated_ins(unsigned long &_line_count);
+
+        ~CodeBlock();
 };
 
 #endif

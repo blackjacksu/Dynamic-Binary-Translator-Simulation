@@ -15,7 +15,8 @@ class BinaryTranslationManager{
         unsigned long code_block_count;
 
         string in_file_name;
-        string file_path;
+        string in_file_path;
+        string out_file_path;
         string out_file_name;
 
         // Nested class: worker
@@ -23,9 +24,9 @@ class BinaryTranslationManager{
         class InsConvertWorker ins_convert_worker;
         class InsOutputWorker ins_out_worker;
 
-        class CodeBlock * guest_asm_blocks;
+        CodeBlock * guest_asm_blocks;
         unsigned long guest_blocks_num;
-        class CodeBlock * host_asm_blocks;
+        CodeBlock * host_asm_blocks;
         unsigned long host_blocks_num;
 
     public:
@@ -40,5 +41,9 @@ class BinaryTranslationManager{
 
         // Main function of the manager
         void conversion_start();
+
+        void clear_obj();
+
+        ~BinaryTranslationManager();
 
 };
