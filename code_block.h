@@ -30,6 +30,7 @@ struct INS {
     ArmInsType arm_type;
     x86InsType x86_type;
     bool is_x86_translated;
+    struct INS * prev;
     struct INS * next;
 };
 
@@ -104,6 +105,8 @@ class CodeBlock{
         unsigned long get_x86_ins_count(x86InsType ins_type);
 
         string * get_translated_ins(unsigned long &_line_count);
+
+        string get_headline();
 
         ~CodeBlock();
 };

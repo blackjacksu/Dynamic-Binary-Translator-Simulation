@@ -69,10 +69,13 @@ void CodeBlock::set_code_block_content(string _line, unsigned long _line_num)
     new_ins_node->line_num = _line_num;
     new_ins_node->lines = _line;
 
+    // Insert new node to the doubly linked list 
     if (ins_head == NULL)
     {
-        // Empty list
+        // Empty list insert the first node
         ins_head = new_ins_node;
+        new_ins_node->prev = NULL;
+        new_ins_node->next = NULL;
         ins_tail = new_ins_node;
     }
     else
@@ -80,6 +83,7 @@ void CodeBlock::set_code_block_content(string _line, unsigned long _line_num)
         // Non empty list 
         // Append new node to the end, ins_tail
         ins_tail->next = new_ins_node;
+        new_ins_node->prev = ins_tail;
         new_ins_node->next = NULL;
         ins_tail = new_ins_node;
     }
@@ -97,8 +101,11 @@ unsigned char CodeBlock::set_end_line(unsigned long _end_line_num)
 
 unsigned char CodeBlock::analyze_code_block_content()
 {
+    // Analyze the code block statistic and block tag
+    // In order for future translate
     unsigned char ret = 0;
     struct INS * ptr = ins_head;
+    struct INS * tail_ptr = ins_tail;
 
     while (ptr != NULL)
     {
@@ -107,60 +114,104 @@ unsigned char CodeBlock::analyze_code_block_content()
         cout << "ins opcode: " << ptr->opcode << ", operand: " << ptr->operand[0] << ", operand 1: " << ptr->operand[1] << endl;
 #endif
         if (ptr->opcode.find("mov") != string::npos || ptr->opcode.find("MOV") != string::npos )
-        {
+        {   
+            ptr->arm_type = ArmInsType::MOV_arm;
+            ptr->x86_type = x86InsType::MOV_x86;
             mov_count ++;
         }
         else if (ptr->opcode.find("add") != string::npos || ptr->opcode.find("ADD") != string::npos)
         {
+            ptr->arm_type = ArmInsType::ADD_arm;
+            ptr->x86_type = x86InsType::ADD_x86;
             add_count++;
         }
         else if (ptr->opcode.find("sub") != string::npos || ptr->opcode.find("SUB") != string::npos)
         {
+            ptr->arm_type = ArmInsType::SUB_arm;
+            ptr->x86_type = x86InsType::SUB_x86;
             sub_count++;
         }        
         else if (ptr->opcode.find("cmp") != string::npos || ptr->opcode.find("CMP") != string::npos)
         {
+            ptr->arm_type = ArmInsType::CMP_arm;
+            ptr->x86_type = x86InsType::CMP_x86;
             cmp_count++;
         }        
         else if (ptr->opcode.find("mul") != string::npos || ptr->opcode.find("MUL") != string::npos)
         {
+            ptr->arm_type = ArmInsType::MUL_arm;
+            ptr->x86_type = x86InsType::MUL_x86;
             mul_count++;
         }        
         else if (ptr->opcode.find("str") != string::npos || ptr->opcode.find("STR") != string::npos)
         {
+            ptr->arm_type = ArmInsType::STR_arm;
+            ptr->x86_type = x86InsType::Other_x86;
             str_count++;
         }        
         else if (ptr->opcode.find("ldr") != string::npos || ptr->opcode.find("LDR") != string::npos)
         {
+            ptr->arm_type = ArmInsType::LDR_arm;
+            ptr->x86_type = x86InsType::Other_x86;
             ldr_count++;
         }        
         else if (ptr->opcode.find("b") != string::npos || ptr->opcode.find("B") != string::npos)
         {
+            ptr->arm_type = ArmInsType::BR_arm;
+            ptr->x86_type = x86InsType::Other_x86;
             bx_count++;
         }        
         else if (ptr->opcode.find("jmp") != string::npos || ptr->opcode.find("JMP") != string::npos)
         {
+            ptr->arm_type = ArmInsType::Other_arm;
+            ptr->x86_type = x86InsType::JMP_x86;
             jmp_count++;
         }        
         else if (ptr->opcode.find("ret") != string::npos || ptr->opcode.find("RET") != string::npos)
         {
+            ptr->arm_type = ArmInsType::Other_arm;
+            ptr->x86_type = x86InsType::RET_x86;
             ret_count++;
         }
         
         ptr = ptr->next;
     }
-// #if DEBUG_CODE_BLOCK
-//     cout << "mov:" << mov_count << endl;
-//     cout << "add:" << add_count << endl;
-//     cout << "sub:" << sub_count << endl;
-//     cout << "cmp:" << cmp_count << endl;
-//     cout << "mul:" << mul_count << endl;
-//     cout << "str:" << str_count << endl;
-//     cout << "ldr:" << ldr_count << endl;
-//     cout << "bx:" << bx_count << endl;
-//     cout << "jmp:" << jmp_count << endl;
-//     cout << "ret:" << ret_count << endl;
-// #endif
+
+    if (tag == BlockTag::NoneTag)
+    {
+        // Analyze block tag if haven't
+        ptr = ins_head;
+        tail_ptr = ins_tail;
+
+        if (tail_ptr->arm_type == ArmInsType::BR_arm 
+            && (tail_ptr->operand->find("lr") != string::npos || tail_ptr->operand->find("LR") != string::npos))
+        {
+            tag = BlockTag::EndTag;
+            return ret;
+        }
+
+        while (ptr != NULL)
+        {
+            
+
+            ptr = ptr->next;
+        }
+    }
+
+#if DEBUG_CODE_BLOCK
+    cout << "mov:" << mov_count << endl;
+    cout << "add:" << add_count << endl;
+    cout << "sub:" << sub_count << endl;
+    cout << "cmp:" << cmp_count << endl;
+    cout << "mul:" << mul_count << endl;
+    cout << "str:" << str_count << endl;
+    cout << "ldr:" << ldr_count << endl;
+    cout << "bx:" << bx_count << endl;
+    cout << "jmp:" << jmp_count << endl;
+    cout << "ret:" << ret_count << endl;
+    cout << "Code Block" << endl; 
+    cout << "tag:" << tag << endl;
+#endif
     return ret;
 }
 
@@ -182,8 +233,6 @@ unsigned char CodeBlock::update_ins_data(struct INS * _update_node, unsigned lon
         prev_node = curr_node;
         curr_node = curr_node->next;
     }
-
-    
 
     return ret;
 }
@@ -227,18 +276,6 @@ void CodeBlock::convert_line_to_instruction(string _line, struct INS * _ins)
         // cout << "start: " << pos_start << ", end: " << pos_end << ", " << _line.substr(pos_start, pos_end - pos_start) << endl;
 #endif
     }
-    
-    // unsigned long i = 0;
-    // regex re(" ");
-    // sregex_token_iterator first{_line.begin(), _line.end(), re, -1}, last;//the '-1' is what makes the regex     split (-1 := what was not matched)
-    // vector<string> tokens{first, last};
-    // cout << "convert ins: size: " << tokens.size() << endl;
-    // _ins->opcode = tokens[0];
-    // for (i = 0; i < tokens.size() - 1; i++)
-    // {
-    //     _ins->operand[i] = tokens[i + 1];
-    // }
-    // _ins->size = tokens.size();
 }
 
 string * CodeBlock::get_translated_ins(unsigned long &_line_count)
@@ -251,7 +288,7 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
     cout << "line count: " << _line_count << endl;
 
     struct INS * seek_head = ins_head;
-    struct INS * seek_tail = seek_head;
+    struct INS * seek_tail = ins_tail;
 
     cout << "tag: " << tag << endl;
 
@@ -267,36 +304,81 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
             break;
         case BlockTag::LoopTag:
             // Translate the Loop tag block
-            if (seek_head->arm_type == ArmInsType::LDR_arm
-                && seek_head->next->arm_type == ArmInsType::CMP_arm
-                && seek_head->next->next->arm_type == ArmInsType::BR_arm)
+            while (seek_head != NULL)
             {
+                if (line_count - seek_head->line_num > 3 )
+                {
+                    // See if there is Loop characteristic
+                    if (seek_head->arm_type == ArmInsType::LDR_arm
+                        && seek_head->next->arm_type == ArmInsType::CMP_arm
+                        && seek_head->next->next->arm_type == ArmInsType::BR_arm)
+                    {
+                    
+                        string opcode = get_x86_Value(seek_head->opcode);
+                        string operand = get_x86_Value("body");
+                        size_t pos = 17;
+                        operand.insert(pos, seek_head->operand[0]);
+                        // We got a pattern hit
+                        _line[i++] = opcode + operand;
+                        seek_head->is_x86_translated = true;
+                        seek_head->next->is_x86_translated = true;
+                        seek_head->next->next->is_x86_translated = true;
+                    }
 
-                string opcode = get_x86_Value(seek_head->opcode);
-                string operand = get_x86_Value("body");
-                size_t pos = 17;
-                operand.insert(pos, seek_head->operand[0]);
-                // We got a pattern hit
-                _line[i++] = opcode + operand;
 
-                seek_head->is_x86_translated = true;
-                seek_head->next->is_x86_translated = true;
-                seek_head->next->next->is_x86_translated = true;
+                }
+                // Traverse the list from head
+                seek_head = seek_head->next;
             }
+
+
             break;            
         case BlockTag::BranchTag:
             // Translate the Branch tag block
             break;
         case BlockTag::EndTag:
             // Translate the End tag block
+            while (seek_tail != NULL)
+            {
+                // Reverse search through the list
+                if (seek_tail->arm_type == ArmInsType::BR_arm)
+                {
+                    
+                }
 
+                seek_tail = seek_tail->prev;
+            }
             break;
         case BlockTag::OtherTag:
-            // Translate the Init tag block
+            // Translate the Other tag block
             break;
         default:
             break;
     }
+
+    // Travers the code block again 
+    // If there is any un translated line 
+    // put some error message and output to the file anyway
+    // We will put this part as the future optimization
+    seek_head = ins_head;
+
+    while (seek_head != NULL)
+    {
+        if (seek_head->is_x86_translated == false)
+        {
+            if (seek_head->line_num < line_count)
+            {
+                // Put some error message here
+                _line[seek_head->line_num] = "<unidentify>";
+            }
+        }
+
+        // Traverse the list from head
+        seek_head = seek_head->next;
+    }
+
+    cout << "block translated" << endl;
+
     return _line;
 }
 
@@ -323,8 +405,13 @@ string CodeBlock::get_line(unsigned long _line_num)
         }
         curr_node = curr_node->next;
     }
-
+    // Not finding a line
     return curr_node == NULL ? "error" : curr_node->lines;
+}
+
+string CodeBlock::get_headline()
+{
+    return head;
 }
 
 unsigned long CodeBlock::get_arm_ins_count(ArmInsType ins_type)

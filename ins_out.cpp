@@ -42,12 +42,15 @@ unsigned char InsOutputWorker::write_to_outfile(CodeBlock &_host_blocks, string 
     BlockTag tag = BlockTag::NoneTag;
     // cout << "file open" << _out_file_path << "file name: " << _out_file_name << endl;
     // cout << "file opened" << endl;
-    
+
     out_fs.open(file_dir, ios_base::app);
     if (out_fs.is_open())
     {
         // Output the code block to file
         line_count = _host_blocks.get_line_count();
+        out_fs << _host_blocks.get_headline();
+        // We skip the headline directly inserted
+        i++;
         while (line_i < line_count)
         {
             // cout << "writing to file, i: " << line_i << endl;
