@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     }
     guest_isa = atoi(argv[argc]);
         
-    if (argv[--argc] != NULL)
+    if (argv[--argc] == NULL)
     {
         cout << "Assembly file name format error" << endl;
         exit(0);
@@ -58,6 +58,8 @@ int main(int argc, char *argv[])
     BinaryTranslationManager binary_trans(guest_isa, host_isa, file_name);
 
     binary_trans.conversion_start();
+
+    cout << "Conversion Done" << endl;
 
     return 0;
 }

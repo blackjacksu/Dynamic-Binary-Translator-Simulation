@@ -12,4 +12,10 @@ Function description: \
     - ARM -> x86 ISA conversion\
     - 
 
- 
+
+Compiile: 
+    - Terminal> make
+
+Execute: 
+    - ./BinaryTranslate square.asm 2 1 
+    ## <exe application> <your asm file> <guest arch> <host arch>
