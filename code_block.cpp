@@ -97,6 +97,8 @@ CodeBlock::CodeBlock()
     ins_head = NULL;
     ins_tail = NULL;
 
+    stack_size = 24;
+
     line_count = 0;
 
     if (!dic_inited)
@@ -130,7 +132,7 @@ string CodeBlock::get_x86_Value(string const &key)
     if (ins_dictionary.find(key) == ins_dictionary.end())
     {
         // Key not found 
-        return "N/A";
+        return " ";
     }
     return ins_dictionary[key]; 
 }
@@ -191,77 +193,103 @@ unsigned char CodeBlock::analyze_code_block_content()
     // Analyze the code block statistic and block tag
     // In order for future translate
     unsigned char ret = 0;
-    struct INS * ptr = ins_head;
-    struct INS * tail_ptr = ins_tail;
+    struct INS * ptr_head = ins_head;
+    struct INS * ptr_tail = ins_tail;
 
-    while (ptr != NULL)
+    while (ptr_head != NULL)
     {
-        convert_line_to_instruction(ptr->lines, ptr);
+        convert_line_to_instruction(ptr_head->lines, ptr_head);
 #if DEBUG_CODE_BLOCK
-        cout << "ins opcode: " << ptr->opcode << ", operand: " << ptr->operand[0] << ", operand 1: " << ptr->operand[1] << endl;
+        cout << "ins opcode: " << ptr_head->opcode << ", operand: " << ptr_head->operand[0] << ", operand 1: " << ptr_head->operand[1] << endl;
 #endif
-        if (ptr->opcode.find("mov") != string::npos || ptr->opcode.find("MOV") != string::npos )
+        if (ptr_head->opcode.find("mov") != string::npos || ptr_head->opcode.find("MOV") != string::npos )
         {   
-            ptr->arm_type = ArmInsType::MOV_arm;
-            ptr->x86_type = x86InsType::MOV_x86;
+            ptr_head->arm_type = ArmInsType::MOV_arm;
+            ptr_head->x86_type = x86InsType::MOV_x86;
             mov_count ++;
         }
-        else if (ptr->opcode.find("add") != string::npos || ptr->opcode.find("ADD") != string::npos)
+        else if (ptr_head->opcode.find("add") != string::npos || ptr_head->opcode.find("ADD") != string::npos)
         {
-            ptr->arm_type = ArmInsType::ADD_arm;
-            ptr->x86_type = x86InsType::ADD_x86;
+            ptr_head->arm_type = ArmInsType::ADD_arm;
+            ptr_head->x86_type = x86InsType::ADD_x86;
             add_count++;
         }
-        else if (ptr->opcode.find("sub") != string::npos || ptr->opcode.find("SUB") != string::npos)
+        else if (ptr_head->opcode.find("sub") != string::npos || ptr_head->opcode.find("SUB") != string::npos)
         {
-            ptr->arm_type = ArmInsType::SUB_arm;
-            ptr->x86_type = x86InsType::SUB_x86;
+            ptr_head->arm_type = ArmInsType::SUB_arm;
+            ptr_head->x86_type = x86InsType::SUB_x86;
             sub_count++;
+
+            // check if stack size got a pattern hit
+            if (ptr_head->size == 4)
+            {
+                if ((ptr_head->operand[0].find("SP") != string::npos || ptr_head->operand[0].find("sp") != string::npos) 
+                    && (ptr_head->operand[1].find("SP") != string::npos || ptr_head->operand[1].find("sp") != string::npos)
+                    && (ptr_head->operand[2].find("#") != string::npos))
+                {
+                    // Guessing stack_size
+                    if (stack_size < ptr_head->operand_value[2])
+                    {
+                        stack_size = ptr_head->operand_value[2];
+                    }
+                }
+            }
         }        
-        else if (ptr->opcode.find("cmp") != string::npos || ptr->opcode.find("CMP") != string::npos)
+        else if (ptr_head->opcode.find("cmp") != string::npos || ptr_head->opcode.find("CMP") != string::npos)
         {
-            ptr->arm_type = ArmInsType::CMP_arm;
-            ptr->x86_type = x86InsType::CMP_x86;
+            ptr_head->arm_type = ArmInsType::CMP_arm;
+            ptr_head->x86_type = x86InsType::CMP_x86;
             cmp_count++;
         }        
-        else if (ptr->opcode.find("mul") != string::npos || ptr->opcode.find("MUL") != string::npos)
+        else if (ptr_head->opcode.find("mul") != string::npos || ptr_head->opcode.find("MUL") != string::npos)
         {
-            ptr->arm_type = ArmInsType::MUL_arm;
-            ptr->x86_type = x86InsType::MUL_x86;
+            ptr_head->arm_type = ArmInsType::MUL_arm;
+            ptr_head->x86_type = x86InsType::MUL_x86;
             mul_count++;
         }        
-        else if (ptr->opcode.find("str") != string::npos || ptr->opcode.find("STR") != string::npos)
+        else if (ptr_head->opcode.find("str") != string::npos || ptr_head->opcode.find("STR") != string::npos)
         {
-            ptr->arm_type = ArmInsType::STR_arm;
-            ptr->x86_type = x86InsType::Other_x86;
+            ptr_head->arm_type = ArmInsType::STR_arm;
+            ptr_head->x86_type = x86InsType::Other_x86;
             str_count++;
+            if (ptr_head->size > 1)
+            {
+                if (ptr_head->operand[0].find("SP") != string::npos || ptr_head->operand[0].find("sp") != string::npos) 
+                {
+                    // Guessing stack_size
+                    if (stack_size < str_count * 8) // 8bit align
+                    {
+                        stack_size = str_count * 8;
+                    }
+                }
+            }
         }        
-        else if (ptr->opcode.find("ldr") != string::npos || ptr->opcode.find("LDR") != string::npos)
+        else if (ptr_head->opcode.find("ldr") != string::npos || ptr_head->opcode.find("LDR") != string::npos)
         {
-            ptr->arm_type = ArmInsType::LDR_arm;
-            ptr->x86_type = x86InsType::Other_x86;
+            ptr_head->arm_type = ArmInsType::LDR_arm;
+            ptr_head->x86_type = x86InsType::Other_x86;
             ldr_count++;
         }        
-        else if (ptr->opcode.find("b") != string::npos || ptr->opcode.find("B") != string::npos)
+        else if (ptr_head->opcode.find("b") != string::npos || ptr_head->opcode.find("B") != string::npos)
         {
-            ptr->arm_type = ArmInsType::BR_arm;
-            ptr->x86_type = x86InsType::Other_x86;
+            ptr_head->arm_type = ArmInsType::BR_arm;
+            ptr_head->x86_type = x86InsType::Other_x86;
             bx_count++;
         }        
-        else if (ptr->opcode.find("jmp") != string::npos || ptr->opcode.find("JMP") != string::npos)
+        else if (ptr_head->opcode.find("jmp") != string::npos || ptr_head->opcode.find("JMP") != string::npos)
         {
-            ptr->arm_type = ArmInsType::Other_arm;
-            ptr->x86_type = x86InsType::JMP_x86;
+            ptr_head->arm_type = ArmInsType::Other_arm;
+            ptr_head->x86_type = x86InsType::JMP_x86;
             jmp_count++;
         }        
-        else if (ptr->opcode.find("ret") != string::npos || ptr->opcode.find("RET") != string::npos)
+        else if (ptr_head->opcode.find("ret") != string::npos || ptr_head->opcode.find("RET") != string::npos)
         {
-            ptr->arm_type = ArmInsType::RET_arm;
-            ptr->x86_type = x86InsType::RET_x86;
+            ptr_head->arm_type = ArmInsType::RET_arm;
+            ptr_head->x86_type = x86InsType::RET_x86;
             ret_count++;
         }
         
-        ptr = ptr->next;
+        ptr_head = ptr_head->next;
     }
 
     print_list(ins_head);
@@ -269,16 +297,16 @@ unsigned char CodeBlock::analyze_code_block_content()
     if (tag == BlockTag::NoneTag)
     {
         // Analyze block tag if haven't
-        ptr = ins_head;
-        tail_ptr = ins_tail;
-
-        if (tail_ptr->arm_type == ArmInsType::BR_arm 
-            && (tail_ptr->operand->find("lr") != string::npos || tail_ptr->operand->find("LR") != string::npos))
+        ptr_head = ins_head;
+        ptr_tail = ins_tail;
+        if (ptr_tail != NULL)
         {
-            tag = BlockTag::EndTag;
-            return ret;
+            if (ptr_tail->operand->find("lr") != string::npos || ptr_tail->operand->find("LR") !=   string::npos)
+            {
+                tag = BlockTag::EndTag;
+            }
         }
-        else if (cmp_count + ldr_count + bx_count > 2)
+        else if ((cmp_count + ldr_count + bx_count) > 2)
         {
             // Suspect it to be loop tag
             tag = BlockTag::LoopTag;
@@ -287,13 +315,6 @@ unsigned char CodeBlock::analyze_code_block_content()
         {
             // Guess it to be branch tag
             tag = BlockTag::BranchTag;
-        }
-
-        while (ptr != NULL)
-        {
-            
-
-            ptr = ptr->next;
         }
     }
 
@@ -360,15 +381,22 @@ void CodeBlock::convert_line_to_instruction(string _line, struct INS * _ins)
         }
         else if (_ins->size < MAX_OPERAND_NUM)
         {
+            cout << "i:" << _ins->size - 1 << "operand: " << _line.substr(pos_start, pos_end - pos_start) << endl;
             _ins->operand[_ins->size - 1] = _line.substr(pos_start, pos_end - pos_start);
+            if (_line.substr(pos_start, pos_end - pos_start).find("#") != string::npos)
+            {
+                // Find a number, extract the value and store it in INS 
+                _ins->operand_value[_ins->size - 1] = stoi(_line.substr(pos_start + 1, pos_end - pos_start));
+                cout << "Find operand value: " << _ins->operand_value[_ins->size - 1] << ", index: " << _ins->size - 1 << endl;
+            }
         }
         else
         {
             // Exceed max
             break;
         }
-
-        zero_i = pos_end + 1;
+        cout << zero_i << " " << pos_start << " " << pos_end << endl;
+        zero_i = pos_end;
         _ins->size++;
         pos_start = _line.find_first_of(alpha_extractor, zero_i);
         pos_end = _line.find_first_of(delimiter, pos_start);
@@ -386,6 +414,7 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
     string * _line = new string[_line_count];
     string opcode;
     string operand;
+    unsigned long ins_i = 0;
     unsigned long operand_i = 0; // query operand index
     unsigned long i = 0; // Including headline
     set_output_line(head, i, _line, _line_count);
@@ -405,55 +434,72 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
             set_output_line("push rbp", i, _line, _line_count);
             i = 2;
             set_output_line("mov rbp rsp", i, _line, _line_count);
-            // seek_head->is_x86_translated = true;
-            // if (seek_head->next != NULL)
-            // {
-            //     seek_head->next->is_x86_translated = true;
-            // }
-            // // Check the stack size
+            i = 3;
+            if (seek_head != NULL)
+            {
+                seek_head->is_x86_translated = true;
+                
+                if (seek_head->next != NULL)
+                {
+                    seek_head->next->is_x86_translated = true;
+                    seek_head = seek_head->next;
+                }
+            }
 
-            // while (i < line_count && seek_head != NULL)
-            // {   
-            //     operand = get_x86_Value("body");
-            //     _line[i++] = "mov " + operand + seek_head->operand[2];
-            //     seek_head->is_x86_translated = true;
-            //     seek_head = seek_head->next;
-            // }
-            cout << "check seg fault" << endl;
+            ins_i = 0;
+            // // Check the stack size
+            while (i < line_count && seek_head != NULL && ins_i < str_count)
+            {   
+                cout << "translate stack" << endl;
+                opcode.clear();
+                operand.clear();
+
+                opcode = "mov";
+                operand = get_x86_Value("body");
+                
+                operand.insert(operand.length() - 2, to_string(ins_i * 8));
+                operand.insert(operand.length(), ", " );
+                set_output_line(opcode + " " + operand, i, _line, _line_count);
+                seek_head->is_x86_translated = true;
+                seek_head = seek_head->next;
+                ins_i ++;
+                i++;
+            } 
             break;
         case BlockTag::LoopTag:
-            // Translate the Loop tag block
-            while (seek_head != NULL)
-            {
-                if (line_count + start_line_num - seek_head->line_num > 3 )
-                {
-                    // See if there is Loop characteristic
-                    if (seek_head->arm_type == ArmInsType::LDR_arm
-                        && seek_head->next->arm_type == ArmInsType::CMP_arm
-                        && seek_head->next->next->arm_type == ArmInsType::BR_arm)
-                    {
-                        cout << "hit on line: " << seek_head->line_num << endl;
-                        opcode = get_x86_Value(seek_head->opcode);
-                        operand = get_x86_Value("body");
-                        size_t pos = 17;
-                        operand.insert(pos, seek_head->operand[0]);
-                        // We got a pattern hit
-                        _line[i++] = opcode + operand;
-                        seek_head->is_x86_translated = true;
-                        seek_head->next->is_x86_translated = true;
-                        seek_head->next->next->is_x86_translated = true;
-                    }
-
-
-                }
-                // Traverse the list from head
-                seek_head = seek_head->next;
-            }
-            
-
-            break;            
         case BlockTag::BranchTag:
-            // Translate the Branch tag block
+            seek_tail = ins_tail;
+            // Translate the Loop tag block/Branch tag block
+            while (seek_tail != NULL)
+            {
+                if (seek_tail->arm_type == ArmInsType::CMP_arm)
+                {
+                    opcode.clear();
+                    operand.clear();
+                    // Found the possible loop relation
+                    if (seek_tail->prev != NULL)
+                    {
+                        // search line before for register
+                        if (seek_tail->prev->arm_type == ArmInsType::LDR_arm)
+                        {
+                            //first ldr then cmp
+                            opcode = get_x86_Value(seek_tail->opcode);
+                            operand = get_x86_Value("body");
+                            seek_tail->next->is_x86_translated = true;
+                        }
+                    }
+                    else
+                    {
+                        // This is the first line
+
+                    }
+                    set_output_line(opcode + " " + operand, seek_tail->line_num, _line, _line_count);
+                }
+
+                seek_tail->is_x86_translated = true;
+                // Traverse the list from head
+                seek_tail = seek_tail->prev;
+            }
 
             break;
         case BlockTag::EndTag:
@@ -508,10 +554,19 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
                 {
                     // store after move 
                 }
+
+                if (seek_head->arm_type == ArmInsType::CMP_arm)
+                {
+                    // CMP find prev node for register
+
+                }
+
+
             }
 
             // Clear temp data
             operand_i = 0;
+            opcode.clear();
             operand.clear();
             // Direct translate region
             if (seek_head->arm_type == ArmInsType::BR_arm 
@@ -519,11 +574,14 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
             {
                 opcode = get_x86_Value(seek_head->opcode);
 
-                while (operand_i < seek_head->size)
-                {
+                while (operand_i < seek_head->size - 1 && seek_head->arm_type == ArmInsType::BR_arm )
+                {   
+                    cout << "operand: " << operand << ", i: " << operand_i << endl;
                     operand += seek_head->operand[operand_i];
                     operand_i++;
                 }
+
+
 
                 set_output_line(opcode + " " + operand, seek_head->line_num - start_line_num, _line, _line_count);
 
@@ -632,7 +690,7 @@ void CodeBlock::print_list(struct INS * _head)
     {
         cout << "INS list line num: " << head->line_num <<  ", lines: " << head->lines << endl;
         cout << "INS Arm Type: " << head->arm_type <<  ", x86 type: " << head->x86_type << ", trans: " << head->is_x86_translated << endl;
-        cout << "INS opcode: " << head->opcode << ", op1: ";
+        cout << "INS opcode: " << head->opcode << ", size: " << head->size << ", op1: ";
 
         while (i < head->size)
         {
@@ -641,7 +699,7 @@ void CodeBlock::print_list(struct INS * _head)
         }
         cout << endl;
 
-        i=0;
+        i = 0;
         head = head->next;
     }
 }

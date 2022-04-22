@@ -26,7 +26,8 @@ struct INS {
     string lines;
     string opcode;
     string operand[MAX_OPERAND_NUM];
-    unsigned char size; // numbers of opcode + operands
+    unsigned long operand_value[MAX_OPERAND_NUM];
+    unsigned char size; // numbers of opcode + operands, max:4
     ArmInsType arm_type;
     x86InsType x86_type;
     bool is_x86_translated;
@@ -42,8 +43,10 @@ class CodeBlock{
         string head;
         string content;
         unsigned long end_line_num; // number of line end in file
-        unsigned long line_count;
+        unsigned long line_count; // the line count in the code block including headline
+        unsigned long stack_size; // the mamximum shift that will incounter in this code block
         CodeBlock * next_block; 
+        CodeBlock * prev_block; 
 
         // Ins conversion variable
         struct INS * ins_head; // Point to the first ins node causing overflow? It is not this part that cause seg fault
