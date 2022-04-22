@@ -107,6 +107,10 @@ CodeBlock::CodeBlock()
         ins_dictionary["arm"] = "x86";
         ins_dictionary["mov"] = "mov";
         ins_dictionary["add"] = "add";
+        ins_dictionary["cmp"] = "cmp";
+        ins_dictionary["str"] = "mov";
+        ins_dictionary["mul"] = "mul";
+
         // branch
         ins_dictionary["b"] = "jmp";
         ins_dictionary["bx"] = "ret";
@@ -117,7 +121,11 @@ CodeBlock::CodeBlock()
         ins_dictionary["body"] = "qword ptr [rbp - 0]";
 
         // Register map
-        ins_dictionary["body"] = "qword ptr [rbp - 0]";
+        ins_dictionary["r0"] = "eax";
+        ins_dictionary["r0"] = "eax";
+        ins_dictionary["r1"] = "eax";
+        ins_dictionary["r2"] = "eax";
+        ins_dictionary["sp"] = "eax";
     
         dic_inited = true;
     }
@@ -316,6 +324,10 @@ unsigned char CodeBlock::analyze_code_block_content()
             // Guess it to be branch tag
             tag = BlockTag::BranchTag;
         }
+        else
+        {
+            tag = BlockTag::OtherTag;
+        }
     }
 
 #if DEBUG_CODE_BLOCK
@@ -458,7 +470,7 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
                 operand = get_x86_Value("body");
                 
                 operand.insert(operand.length() - 2, to_string(ins_i * 8));
-                operand.insert(operand.length(), ", " );
+                operand.insert(operand.length(), ", 0" );
                 set_output_line(opcode + " " + operand, i, _line, _line_count);
                 seek_head->is_x86_translated = true;
                 seek_head = seek_head->next;
@@ -468,6 +480,7 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
             break;
         case BlockTag::LoopTag:
         case BlockTag::BranchTag:
+        case BlockTag::OtherTag:
             seek_tail = ins_tail;
             // Translate the Loop tag block/Branch tag block
             while (seek_tail != NULL)
@@ -485,18 +498,30 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
                             //first ldr then cmp
                             opcode = get_x86_Value(seek_tail->opcode);
                             operand = get_x86_Value("body");
-                            seek_tail->next->is_x86_translated = true;
+                            if (seek_tail->size > 0)
+                            {
+                                operand += seek_tail->operand[seek_tail->size - 1];
+                            }
+                            operand += ", 10";
+                            seek_tail->prev->is_x86_translated = true;
                         }
                     }
                     else
                     {
                         // This is the first line
-
+                        opcode = get_x86_Value(seek_tail->opcode);
+                        operand = get_x86_Value("body");
+                        if (seek_tail->size > 0)
+                        {
+                            operand += seek_tail->operand[seek_tail->size - 1];
+                        }
+                        operand += ", 10";
                     }
-                    set_output_line(opcode + " " + operand, seek_tail->line_num, _line, _line_count);
+                    set_output_line(opcode + " " + operand, seek_tail->line_num - start_line_num, _line, _line_count);
+
+                    seek_tail->is_x86_translated = true;
                 }
 
-                seek_tail->is_x86_translated = true;
                 // Traverse the list from head
                 seek_tail = seek_tail->prev;
             }
@@ -515,7 +540,6 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
                 seek_tail = seek_tail->prev;
             }
             break;
-        case BlockTag::OtherTag:
         case BlockTag::NoneTag:
             // Translate the Other tag block
             break;
@@ -543,25 +567,91 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
             {
                 // Check 2 consecutive INS
                 if (seek_head->arm_type == ArmInsType::STR_arm 
-                    && seek_head->next->arm_type ==  ArmInsType::LDR_arm)
+                    && seek_head->next->arm_type ==  ArmInsType::LDR_arm 
+                    && !seek_head->is_x86_translated)
                 {
                     // Load after store
+                    // store after move 
+                    opcode.clear();
+                    operand.clear();
+                    ins_i = 0;
 
+                    opcode = get_x86_Value(seek_head->opcode);
+                    while (ins_i < seek_head->size)
+                    {   
+                        operand += get_x86_Value(seek_head->operand[ins_i]);
+                        ins_i ++;
+                    }
+                    set_output_line(opcode + " " + operand, seek_head->line_num - start_line_num, _line, _line_count);
+
+
+                    seek_head->is_x86_translated = true;
+                    seek_head->next->is_x86_translated = true;
                 }
 
                 if (seek_head->arm_type == ArmInsType::MOV_arm 
-                    && seek_head->next->arm_type == ArmInsType::STR_arm)
+                    && seek_head->next->arm_type == ArmInsType::STR_arm
+                    && !seek_head->is_x86_translated)
                 {
                     // store after move 
+                    opcode.clear();
+                    operand.clear();
+                    ins_i = 0;
+
+                    opcode = get_x86_Value(seek_head->opcode);
+                    while (ins_i < seek_head->size)
+                    {   
+                        operand += get_x86_Value(seek_head->operand[ins_i]);
+                        ins_i ++;
+                    }
+                    set_output_line(opcode + " " + operand, seek_head->line_num - start_line_num, _line, _line_count);
+
+
+                    seek_head->is_x86_translated = true;
+                    seek_head->next->is_x86_translated = true;
                 }
 
-                if (seek_head->arm_type == ArmInsType::CMP_arm)
+
+                if (seek_head->arm_type == ArmInsType::LDR_arm 
+                    && seek_head->next->arm_type == ArmInsType::ADD_arm
+                    && !seek_head->is_x86_translated)
+                {
+                    // Add after Store 
+                    opcode.clear();
+                    operand.clear();
+                    ins_i = 0;
+                    // This is the first line
+                    opcode = get_x86_Value(seek_head->opcode);
+                    
+                    while (ins_i < seek_head->size)
+                    {   
+                        operand += get_x86_Value(seek_head->operand[ins_i]);
+                        ins_i ++;
+                    }
+                    set_output_line(opcode + " " + operand, seek_head->line_num - start_line_num, _line, _line_count);
+
+                    seek_head->is_x86_translated = true;
+                    seek_head->next->is_x86_translated = true;
+                }
+
+                if (seek_head->arm_type == ArmInsType::CMP_arm
+                    && !seek_head->is_x86_translated)
                 {
                     // CMP find prev node for register
 
+                    opcode.clear();
+                    operand.clear();
+                    // This is the first line
+                    opcode = get_x86_Value(seek_head->opcode);
+                    operand = get_x86_Value("body");
+                    if (seek_head->size > 0)
+                    {
+                        operand += seek_head->operand[seek_head->size - 1];
+                    }
+                    set_output_line(opcode + " " + operand, seek_head->line_num - start_line_num, _line, _line_count);
+
+                    seek_head->is_x86_translated = true;
                 }
-
-
             }
 
             // Clear temp data
@@ -569,8 +659,9 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
             opcode.clear();
             operand.clear();
             // Direct translate region
-            if (seek_head->arm_type == ArmInsType::BR_arm 
-                || seek_head->arm_type == ArmInsType::RET_arm)
+            if ((seek_head->arm_type == ArmInsType::BR_arm 
+                || seek_head->arm_type == ArmInsType::RET_arm )
+                && !seek_head->is_x86_translated)
             {
                 opcode = get_x86_Value(seek_head->opcode);
 
@@ -581,7 +672,24 @@ string * CodeBlock::get_translated_ins(unsigned long &_line_count)
                     operand_i++;
                 }
 
+                set_output_line(opcode + " " + operand, seek_head->line_num - start_line_num, _line, _line_count);
 
+                seek_head->is_x86_translated = true;
+            }
+
+
+            if ((seek_head->arm_type == ArmInsType::STR_arm || seek_head->arm_type == ArmInsType::MUL_arm 
+                || seek_head->arm_type == ArmInsType::ADD_arm)
+                && !seek_head->is_x86_translated)
+            {
+                opcode = get_x86_Value(seek_head->opcode);
+
+                while (operand_i < seek_head->size - 1  )
+                {   
+                    cout << "operand: " << operand << ", i: " << operand_i << endl;
+                    operand += seek_head->operand[operand_i];
+                    operand_i++;
+                }
 
                 set_output_line(opcode + " " + operand, seek_head->line_num - start_line_num, _line, _line_count);
 

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <ctime>
 #include "binary_translation.h"
 
 using namespace std;
@@ -57,9 +59,19 @@ int main(int argc, char *argv[])
 
     BinaryTranslationManager binary_trans(guest_isa, host_isa, file_name);
 
+    auto start = chrono::steady_clock::now();
+    // std::time_t start_time = std::chrono::system_clock::to_time_t(start);
+
     binary_trans.conversion_start();
 
+
+    auto end = chrono::steady_clock::now();
+    // std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+
+    std::chrono::duration<double> elapsed_seconds = end-start;
     cout << "Conversion Done" << endl;
+    cout << "Time elapsed: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << endl;
+    // cout << "start: " << ctime(&start_time) << ", end:" << ctime(&end_time) << endl;
 
     return 0;
 }
