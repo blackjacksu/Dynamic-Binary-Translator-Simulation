@@ -6,16 +6,16 @@ ostream& operator<<(ostream& os, const ParseState _state)
   switch(_state)
   {
     case ParseState::FileInit:
-        os << "0";
+        os << "ParseState::FileInit";
         break;
     case ParseState::FileParsed:
-        os << "1";
+        os << "ParseState::FileParsed";
         break;
     case ParseState::InsParsed:
-        os << "2";
+        os << "ParseState::InsParsed";
         break;
     case ParseState::Completed:
-        os << "3";
+        os << "ParseState::Completed";
         break;
     default:
         os << "<others>";
@@ -90,7 +90,8 @@ CodeBlock * AsmParseWorker::file_parsing_to_block(unsigned long &_blocks_num, st
             {
                 // Set the end line for previous block
                 if (block_i >= 0)
-                {
+                {   
+                    cout << "Set end of block: " << block_i << endl;
                     _code_blocks[block_i].set_end_line(line_i);
                     _code_blocks[block_i].analyze_code_block_content();
                 }

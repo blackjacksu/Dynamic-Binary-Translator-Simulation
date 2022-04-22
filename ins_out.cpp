@@ -49,8 +49,9 @@ unsigned char InsOutputWorker::write_to_outfile(CodeBlock &_host_blocks, string 
         // Output the code block to file
         line_count = _host_blocks.get_line_count();
         out_fs << _host_blocks.get_headline();
+        out_fs << endl;
         // We skip the headline directly inserted
-        i++;
+        line_i++;
         while (line_i < line_count)
         {
             // cout << "writing to file, i: " << line_i << endl;

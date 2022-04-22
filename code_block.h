@@ -17,7 +17,7 @@ using namespace std;
 
 
 enum BlockTag {NoneTag = 0, InitTag, LoopTag, BranchTag, EndTag, OtherTag};
-enum ArmInsType {MOV_arm = 0, ADD_arm, SUB_arm, CMP_arm, MUL_arm, BR_arm, STR_arm, LDR_arm, Other_arm};
+enum ArmInsType {MOV_arm = 0, ADD_arm, SUB_arm, CMP_arm, MUL_arm, BR_arm, RET_arm, STR_arm, LDR_arm, Other_arm};
 enum x86InsType {MOV_x86 = 0, ADD_x86, SUB_x86, CMP_x86, MUL_x86, JMP_x86, RET_x86, Other_x86};
 
 // A linked list struct for storing the instructions data 
@@ -66,7 +66,7 @@ class CodeBlock{
         static bool dic_inited;
 
 
-
+        void set_output_line(string _content, unsigned long _line_num, string *_out_line, unsigned long _line_count);
 
 
     public:
@@ -107,6 +107,8 @@ class CodeBlock{
         string * get_translated_ins(unsigned long &_line_count);
 
         string get_headline();
+
+        void print_list(struct INS * _head);
 
         ~CodeBlock();
 };
