@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
     std::chrono::duration<double> elapsed_seconds = end-start;
     cout << "Conversion Done" << endl;
-    cout << "Time elapsed: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << endl;
+    cout << "Time elapsed: " << chrono::duration_cast<chrono::nanoseconds>(end - start).count() << " ns" << endl;
     // cout << "start: " << ctime(&start_time) << ", end:" << ctime(&end_time) << endl;
 
     return 0;
